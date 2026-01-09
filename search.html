@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>🔍 البحث العام - المهندس عمار يوسف</title>
+  <style>
+    :root{--main:#0ea5e9;--danger:#ef4444}
+    body{margin:0;font-family:system-ui,"Segoe UI",sans-serif;background:#f8fafc;color:#0f172a}
+    header{background:var(--main);color:#fff;padding:16px;text-align:center;font-size:20px;font-weight:700}
+    nav{
+      display:flex;
+      justify-content:center;   /* وسط */
+      gap:12px;                 /* مسافة متزنة */
+      padding:10px;
+      background:#fff;
+      border-bottom:1px solid #e6e6e6;
+    }
+    nav button{
+      background:#fff;
+      border:1px solid transparent;
+      padding:8px 12px;
+      border-radius:6px;
+      cursor:pointer;
+      font-size:14px;
+      color:#64748b;
+    }
+    nav button.active{
+      color:var(--main);
+      font-weight:700;
+      background:rgba(14,165,233,0.06);
+      border-color:rgba(14,165,233,0.12);
+    }
+    .card{background:#fff;padding:14px;margin:20px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+    input{padding:8px;margin:4px;border:1px solid #cbd5e1;border-radius:6px}
+    button{padding:8px 12px;margin:4px;border:none;border-radius:6px;cursor:pointer}
+    .btn-main{background:#0ea5e9;color:#fff}
+    .btn-danger{background:#ef4444;color:#fff}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{border:1px solid #e2e8f0;padding:10px;text-align:center;font-size:16px;font-weight:600;color:#0b122a}
+    th{background:#e2e8f0}
+    tbody tr:nth-child(even){background:#f1f5f9}
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<header>🔍 البحث العام - المهندس عمار يوسف</header>
+
+<nav>
+  <button onclick="location.href='index.html'" class="active">🏠 الرئيسية</button>
+  <button onclick="location.href='points.html'">🗺️ إدارة النقاط</button>
+</nav>
+
+<div class="card">
+  <h2>بحث عن نقطة</h2>
+  <input id="searchInput" placeholder="أدخل اسم النقطة أو X أو Y">
+  <button class="btn-main" onclick="searchPoints()">بحث</button>
+  <button onclick="clearSearch()">🔄 بحث جديد</button>
+  <button class="btn-danger" onclick="deleteAllPoints()">🗑 مسح جميع النقاط</button>
+  <button class="btn-main" onclick="exportExcel()">📊 تصدير النتائج إلى Excel</button>
+</div>
+
+<div class="card">
+  <h2>نتائج البحث</h2>
+  <table id="resultsTable">
+    <thead>
+      <tr><th>#</th><th>اسم النقطة</th><th>X</th><th>Y</th><th>الجلسة</th><th>تحكم</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+let sessionsDB = JSON.parse(localStorage.getItem("sessionsDB") || "[]");
+let currentSessionId = sessionsDB.length ? sessionsDB[0].id : null;
+let lastResults = []; // نخزن آخر نتائج بحث
+
+function saveDB(){
+  localStorage.setItem("sessionsDB", JSON.stringify(sessionsDB));
+}
+
+function searchPoints(){
+  const queryRaw = document.getElementById("searchInput").value.trim();
+  const tbody = document.querySelector("#resultsTable tbody");
+  tbody.innerHTML = "";
+  lastResults = [];
+
+  if(!queryRaw){ alert("⚠️ أدخل نص أو رقم للبحث"); return; }
+
+  let queryNum = parseFloat(queryRaw);
+  let isNumber = !isNaN(queryNum);
+
+  sessionsDB.forEach(s=>{
+    (s.points || []).forEach((p,idx)=>{
+      if(isNumber){
+        if(Math.abs(Number(p.x) - queryNum) <= 5 || Math.abs(Number(p.y) - queryNum) <= 5){
+          lastResults.push({session:s.name, sessionId:s.id, index:idx, ...p});
+        }
+      }else{
+        if(p.name && p.name.toLowerCase().includes(queryRaw.toLowerCase())){
+          lastResults.push({session:s.name, sessionId:s.id, index:idx, ...p});
+        }
+      }
+    });
+  });
+
+  if(!lastResults.length){
+    tbody.innerHTML = "<tr><td colspan='6'>❌ لا يوجد نتائج</td></tr>";
+    return;
+  }
+
+  lastResults.forEach((r,i)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${i+1}</td><td>${r.name}</td><td>${r.x}</td><td>${r.y}</td><td>${r.session}</td>
+                    <td><button class="btn-danger" onclick="deletePoint(${r.sessionId},${r.index})">🗑 مسح</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function clearSearch(){
+  document.getElementById("searchInput").value = "";
+  const tbody = document.querySelector("#resultsTable tbody");
+  tbody.innerHTML = "";
+  lastResults = [];
+}
+
+function deletePoint(sessionId, index){
+  let s = sessionsDB.find(ss=>ss.id===sessionId);
+  if(s && s.points){
+    s.points.splice(index,1);
+    saveDB();
+    searchPoints();
+  }
+}
+
+function deleteAllPoints(){
+  if(!confirm("⚠️ هل تريد مسح جميع النقاط من كل الجلسات؟")) return;
+  sessionsDB.forEach(s=> s.points=[]);
+  saveDB();
+  clearSearch();
+}
+
+// تصدير نتائج البحث إلى Excel
+function exportExcel(){
+  if(!lastResults.length){ alert("❌ لا يوجد نتائج لتصديرها"); return; }
+  const ws = XLSX.utils.json_to_sheet(lastResults.map(r=>({
+    "اسم النقطة": r.name,
+    "X": r.x,
+    "Y": r.y,
+    "الجلسة": r.session
+  })));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "SearchResults");
+  XLSX.writeFile(wb, "search_results.xlsx");
+}
+</script>
+</body>
+</html>

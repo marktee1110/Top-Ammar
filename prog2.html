@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>📐 برنامج 2 — حساب الزاوية والمسافة (إدخال إحداثيات الهدف-المهندس عمار يوسف)</title>
+  <style>
+    :root{--main:#3b5d3b;--danger:#ef4444}  /* زيتي غامق */
+    body{margin:0;font-family:system-ui,"Segoe UI",sans-serif;background:#f8fafc;color:#0f172a}
+    header{background:var(--main);color:#fff;padding:16px;text-align:center;font-size:20px;font-weight:700}
+    /* شريط التنقل */
+    nav{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:space-around;
+      align-items:center;
+      padding:8px;
+      background:#fff;
+      border-bottom:1px solid #e6e6e6;
+    }
+    nav button{
+      background:#fff;
+      border:1px solid transparent;
+      padding:6px 8px;
+      border-radius:6px;
+      cursor:pointer;
+      font-size:14px;
+      color:#64748b;
+    }
+    nav button.active{
+      color:var(--main);
+      font-weight:700;
+      background:rgba(59,93,59,0.06);
+      border-color:rgba(59,93,59,0.12);
+    }
+
+    .container{max-width:980px;margin:20px auto;padding:0 12px}
+    .card{background:#fff;padding:14px;border-radius:8px;box-shadow:0 1px 3px rgba(2,6,23,0.06);margin-bottom:14px}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .input{padding:10px;border:1px solid #cbd5e1;border-radius:6px;width:100%;margin-bottom:8px;font-size:15px}
+    .btn{padding:10px 12px;border:none;border-radius:6px;cursor:pointer;font-size:15px}
+    .btn.main{background:var(--main);color:#fff}
+    .btn.ghost{background:#fff;border:1px solid #cbd5e1}
+    .btn.danger{background:var(--danger);color:#fff}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{
+      border:1px solid #e2e8f0;
+      padding:10px;
+      text-align:center;
+      font-size:16px;
+      font-weight:600;
+      color:#0b1220;
+    }
+    tbody tr:nth-child(odd){ background:#ffffff; }
+    tbody tr:nth-child(even){ background:#f1f5f9; }
+    @media (max-width:700px){
+      .row{flex-direction:column}
+      .input{width:100%}
+      nav{justify-content:flex-start;gap:6px;padding:8px;overflow:auto}
+      nav button{flex:0 0 auto}
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.6/proj4.js"></script>
+</head>
+<body>
+<header>📐 برنامج 2 — حساب الزاوية والمسافة<br>المهندس عمار يوسف</header>
+
+<nav>
+  <button onclick="location.href='index.html'">🏠 الرئيسية</button>
+
+</nav>
+
+<div class="container">
+
+  <!-- إدارة الجلسات -->
+  <div class="card">
+    <h3>إدارة الجلسات</h3>
+    <div class="row">
+      <select id="sessionsDropdown2" class="input" style="max-width:260px"></select>
+      <button id="btnNewSession2" class="btn main">➕ جلسة جديدة</button>
+      <button id="btnSaveSession2" class="btn ghost">💾 حفظ الجلسة</button>
+      <button id="btnDeleteSession2" class="btn danger">🗑 حذف الجلسة</button>
+    </div>
+  </div>
+  <!-- الوقفة -->
+  <div class="card">
+    <h3>الوقفة</h3>
+    <input id="standname2" class="input" placeholder="اسم الوقفة" list="pointsList2" />
+    <input id="standx2" class="input" type="number" placeholder="X الوقفة (أدخل موجبة، سيعامل البرنامج X كسالبة داخلياً)" />
+    <input id="standy2" class="input" type="number" placeholder="Y الوقفة" />
+    <div class="row">
+      <button id="btnSaveStand2" class="btn main">💾 حفظ الوقفة</button>
+      <button id="btnUpdate21" class="btn ghost">🔄 تحديث</button>
+    </div>
+  </div>
+
+  <!-- الزيرو -->
+  <div class="card">
+    <h3>الزيرو</h3>
+    <input id="zeroname2" class="input" placeholder="اسم الزيرو" list="pointsList2" />
+    <input id="zerox2" class="input" type="number" placeholder="X الزيرو (أدخل موجبة)" />
+    <input id="zeroy2" class="input" type="number" placeholder="Y الزيرو" />
+    <div class="row">
+      <button id="btnSaveZero2" class="btn main">💾 حفظ الزيرو</button>
+      <button id="btnUpdate22" class="btn ghost">🔄 تحديث</button>
+    </div>
+  </div>
+
+  <!-- قائمة اقتراحات النقاط -->
+  <datalist id="pointsList2"></datalist>
+
+  <!-- الهدف (إحداثيات) -->
+  <div class="card">
+    <h3>إضافة هدف (إحداثيات X,Y)</h3>
+    <input id="targetname2" class="input" placeholder="اسم الهدف (اختياري)" />
+    <input id="targetx2" class="input" type="number" placeholder="X الهدف (أدخل موجبة، سيعامل البرنامج X كسالبة داخلياً)" />
+    <input id="targety2" class="input" type="number" placeholder="Y الهدف" />
+    <div class="row">
+      <button id="btnAddTarget2" class="btn main">➕ إضافة هدف</button>
+      <button id="btnClearTarget2" class="btn ghost">مسح</button>
+    </div>
+  </div>
+
+  <!-- جدول النتائج -->
+  <div class="card">
+    <h3>نتائج برنامج 2</h3>
+    <table id="table_prog2">
+      <thead>
+        <tr><th>#</th><th>اسم الهدف</th><th>X</th><th>Y</th><th>المسافة (م)</th><th>الزاوية (غراد)</th><th>تحكم</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="row" style="margin-top:10px">
+      <button id="btnExportCSV2" class="btn ghost">📄 تصدير CSV</button>
+      <button id="btnExportPTS2" class="btn ghost">📄 تصدير PTS</button>
+      <button id="btnExportWGS842" class="btn ghost">🌐 تصدير WGS84</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // إعدادات الإسقاط
+  var deirEzzorProj = "+proj=utm +zone=37 +datum=WGS84 +units=m +no_defs";
+  var wgs84Proj = "+proj=longlat +datum=WGS84 +no_defs";
+
+  // تخزين الجلسات (مفتاح منفصل للبرنامج الثاني)
+  var STORAGEKEYSESSIONS = "sessions_prog2";
+  var sessions = [];
+  var currentTargets = [];
+
+  // أدوات مساعدة
+  function getEl(id){ return document.getElementById(id); }
+  function safeParse(raw){ try { return raw ? JSON.parse(raw) : []; } catch(e){ return []; } }
+  function saveFile(content, name){
+    var blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 500);
+  }
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function fileName(base, ext){
+    var d = new Date();
+    return base + "" + d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()) + "" + pad(d.getHours()) + "-" + pad(d.getMinutes()) + "." + ext;
+  }
+
+  // جلسات
+  function loadSessions(){
+    sessions = safeParse(localStorage.getItem(STORAGEKEYSESSIONS));
+  }
+  function saveSessions(){
+    localStorage.setItem(STORAGEKEYSESSIONS, JSON.stringify(sessions));
+  }
+  function refreshSessionsDropdown2(){
+    var dd = getEl("sessionsDropdown2");
+    dd.innerHTML = '<option value="">اختر جلسة...</option>';
+    sessions.forEach(function(s,i){
+      var opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = (s.name || ("جلسة "+(i+1))) + " — " + (s.date || "");
+      dd.appendChild(opt);
+    });
+  }
+  function newSession2(){
+    var s = {name:"جلسة "+(sessions.length+1), desc:"", date:new Date().toLocaleString(), targets:[], stand:{}, zero:{}};
+    sessions.push(s);
+    saveSessions();
+    refreshSessionsDropdown2();
+    getEl("sessionsDropdown2").value = String(sessions.length-1);
+    loadSession2(sessions.length-1);
+    alert("تم إنشاء جلسة جديدة والبدء بها");
+  }
+  function saveSession2(){
+    var dd = getEl("sessionsDropdown2");
+    if(dd.value===""){ alert("اختر جلسة"); return; }
+    var idx = parseInt(dd.value,10);
+    var s = sessions[idx];
+    var name = prompt("أدخل اسم الجلسة", s.name || "");
+    if(!name){ return; }
+    var desc = prompt("أدخل وصف للجلسة", s.desc || "");
+    s.name = name;
+    s.desc = desc || "";
+    s.date = new Date().toLocaleString();
+    s.targets = currentTargets.slice();
+    // نخزن قيم الوقفة والزيرو كما أدخلها (موجبة) لسهولة التعديل لاحقاً
+    s.stand = {
+      name:getEl("standname2").value,
+      x:parseFloat(getEl("standx2").value),
+      y:parseFloat(getEl("standy2").value)
+    };
+    s.zero = {
+      name:getEl("zeroname2").value,
+      x:parseFloat(getEl("zerox2").value),
+      y:parseFloat(getEl("zeroy2").value)
+    };
+    saveSessions();
+    refreshSessionsDropdown2();
+    dd.value = String(idx);
+    alert("تم حفظ الجلسة");
+  }
+
+  function deleteSession2(){
+    var dd = getEl("sessionsDropdown2");
+    if(dd.value===""){ alert("اختر جلسة"); return; }
+    var idx = parseInt(dd.value,10);
+    sessions.splice(idx,1);
+    saveSessions();
+    refreshSessionsDropdown2();
+    dd.value = "";
+    currentTargets = [];
+    renderTable();
+    alert("تم حذف الجلسة");
+  }
+
+  function loadSession2(index){
+    var s = sessions[index];
+    if(!s){ return; }
+    currentTargets = (s.targets || []).slice();
+    renderTable();
+    // نعرض قيم الوقفة والزيرو كما أدخلها (موجبة) لسهولة التعديل
+    getEl("standname2").value = (s.stand && s.stand.name) ? s.stand.name : "";
+    getEl("standx2").value   = (s.stand && typeof s.stand.x !== "undefined") ? s.stand.x : "";
+    getEl("standy2").value   = (s.stand && typeof s.stand.y !== "undefined") ? s.stand.y : "";
+    getEl("zeroname2").value = (s.zero && s.zero.name) ? s.zero.name : "";
+    getEl("zerox2").value    = (s.zero && typeof s.zero.x !== "undefined") ? s.zero.x : "";
+    getEl("zeroy2").value    = (s.zero && typeof s.zero.y !== "undefined") ? s.zero.y : "";
+  }
+
+  // إضافة هدف بإحداثيات (المستخدم يدخل X موجبة، نعاملها سالبة داخلياً)
+  function addTargetProg2(){
+    var name = (getEl("targetname2").value || "").trim() || "-";
+    var txinput = parseFloat(getEl("targetx_2").value);
+    var ty = parseFloat(getEl("targety2").value);
+
+    // قيم الوقفة والزيرو من الحقول (المستخدم يدخل X موجبة)
+    var sxinput = parseFloat(getEl("standx_2").value);
+    var sy = parseFloat(getEl("standy2").value);
+    var zxinput = parseFloat(getEl("zerox_2").value);
+    var zy = parseFloat(getEl("zeroy2").value);
+
+    var vals = [txinput, ty, sxinput, sy, zx_input, zy];
+    for(var i=0;i<vals.length;i++){ if(isNaN(vals[i])){ alert("تأكد من إدخال الوقفة، الزيرو، وإحداثيات الهدف صحيحة"); return; } }
+
+    // تحويل X إلى سالبة داخلياً لتوافق النظام
+    var sx = -Math.abs(sx_input);
+    var zx = -Math.abs(zx_input);
+    var tx = -Math.abs(tx_input);
+
+    // حساب المسافة
+    var dx = tx - sx;
+    var dy = ty - sy;
+    var distance = Math.sqrt(dxdx + dydy);
+
+    // حساب الزوايا: خط الوقوف-زيرو وخط الوقوف-هدف
+    var zeroDir = Math.atan2(zy - sy, zx - sx);
+    var targetDir = Math.atan2(dy, dx);
+
+    // الفرق بالغراد (400 غراد = دورة كاملة)
+    var angleGrad = (targetDir - zeroDir) * 200 / Math.PI;
+    if(angleGrad < 0) angleGrad += 400;
+    // دقة المطلوبة: المسافة بدقتين، الزاوية بأربع منازل
+    currentTargets.push({
+      name: name,
+      x: tx,
+      y: ty,
+      dist: Number(distance.toFixed(2)),
+      angle: Number(angleGrad.toFixed(4))
+    });
+
+    renderTable();
+    clearTargetInputs2();
+    alert("تمت إضافة الهدف");
+  }
+
+  function clearTargetInputs2(){
+    getEl("targetname2").value = "";
+    getEl("targetx2").value = "";
+    getEl("targety2").value = "";
+  }
+
+  function removeTarget2(i){
+    currentTargets.splice(i,1);
+    renderTable();
+  }
+
+  function renderTable(){
+    var tbody = getEl("table_prog2").querySelector("tbody");
+    tbody.innerHTML = "";
+    currentTargets.forEach(function(t,i){
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td>"+(i+1)+"</td>"+
+        "<td>"+t.name+"</td>"+
+        "<td>"+t.x.toFixed(3)+"</td>"+
+        "<td>"+t.y.toFixed(3)+"</td>"+
+        "<td>"+t.dist.toFixed(2)+"</td>"+
+        "<td>"+t.angle.toFixed(4)+"</td>"+
+        "<td><button class='btn danger' data-idx='"+i+"'>🗑 حذف</button></td>";
+      tbody.appendChild(tr);
+    });
+    // ربط أزرار الحذف داخل الجدول
+    Array.prototype.forEach.call(tbody.querySelectorAll("button[data-idx]"), function(b){
+      b.addEventListener("click", function(){
+        var idx = parseInt(this.getAttribute("data-idx"),10);
+        removeTarget2(idx);
+      });
+    });
+  }
+
+  // حفظ الوقفة/الزيرو كتنبيه فقط (بدون تخزين خاص منفصل)
+  function saveStand2(){
+    var name = getEl("standname2").value.trim();
+    var x = parseFloat(getEl("standx2").value);
+    var y = parseFloat(getEl("standy2").value);
+    if(!name || isNaN(x) || isNaN(y)){ alert("أدخل بيانات صحيحة للوقفة"); return; }
+    alert("تم حفظ الوقفة");
+  }
+  function saveZero2(){
+    var name = getEl("zeroname2").value.trim();
+    var x = parseFloat(getEl("zerox2").value);
+    var y = parseFloat(getEl("zeroy2").value);
+    if(!name || isNaN(x) || isNaN(y)){ alert("أدخل بيانات صحيحة للزيرو"); return; }
+    alert("تم حفظ الزيرو");
+  }
+
+  // تحديث النتائج مع تأكيد (تعيد حساب المسافات والزوايا لكل الأهداف الحالية)
+  function updateResults2(){
+    var proceed = confirm("هل تريد تحديث النتائج؟");
+    if(!proceed){ alert("❌ لم يتم التحديث"); return; }
+
+    var sxinput = parseFloat(getEl("standx_2").value);
+    var sy = parseFloat(getEl("standy2").value);
+    var zxinput = parseFloat(getEl("zerox_2").value);
+    var zy = parseFloat(getEl("zeroy2").value);
+
+    var vals = [sxinput, sy, zxinput, zy];
+    for(var i=0;i<vals.length;i++){ if(isNaN(vals[i])){ alert("⚠️ أدخل بيانات صحيحة للوقفة والزيرو"); return; } }
+
+    var sx = -Math.abs(sx_input);
+    var zx = -Math.abs(zx_input);
+
+    currentTargets = currentTargets.map(function(t){
+      // t.x is stored already as internal negative X; if it was stored as negative keep it
+      var tx = t.x;
+      var ty = t.y;
+      var dx = tx - sx;
+      var dy = ty - sy;
+      var distance = Math.sqrt(dxdx + dydy);
+      var zeroDir = Math.atan2(zy - sy, zx - sx);
+      var targetDir = Math.atan2(dy, dx);
+      var angleGrad = (targetDir - zeroDir) * 200 / Math.PI;
+      if(angleGrad < 0) angleGrad += 400;
+      return { name: t.name, x: tx, y: ty, dist: Number(distance.toFixed(2)), angle: Number(angleGrad.toFixed(4)) };
+    });
+
+    renderTable();
+    alert("✅ تم تحديث النتائج بنجاح");
+  }
+
+  // اقتراحات النقاط من قاعدة pointsDB (اختياري)
+  function loadPointsSuggestions(){
+    var points = safeParse(localStorage.getItem("pointsDB"));
+    var dl = getEl("pointsList2");
+    dl.innerHTML = "";
+    points.forEach(function(p){
+      var opt = document.createElement("option");
+      opt.value = p.name;
+      dl.appendChild(opt);
+    });
+  }
+  function applyPointData2(inputId){
+    var name = getEl(inputId).value.trim();
+    var points = safeParse(localStorage.getItem("pointsDB"));
+    var p = points.find(function(pt){ return pt.name === name; });
+    if(p){
+      if(inputId === "standname2"){
+        getEl("standx2").value = p.x;
+        getEl("standy2").value = p.y;
+      }else if(inputId === "zeroname2"){
+        getEl("zerox2").value = p.x;
+        getEl("zeroy2").value = p.y;
+      }
+    }
+  }
+
+  // تصدير
+  function convertPointsToWGS84(points){
+    return points.map(function(p,i){
+      var res = proj4(deirEzzorProj, wgs84Proj, [Number(p.x), Number(p.y)]);
+      return { id: p.name || ("P"+(i+1)), lon: res[0], lat: res[1] };
+    });
+  }
+  function exportCSV2(){
+    if(!currentTargets.length){ alert("لا يوجد نقاط"); return; }
+    var lines = ["id,x,y,dist,angle"];
+    currentTargets.forEach(function(t,i){
+      lines.push((t.name||("P"+(i+1)))+","+t.x.toFixed(3)+","+t.y.toFixed(3)+","+t.dist.toFixed(2)+","+t.angle.toFixed(4));
+    });
+    saveFile(lines.join("\n"), fileName("prog2","csv"));
+  }
+  function exportPTS2(){
+    if(!currentTargets.length){ alert("لا يوجد نقاط"); return; }
+    var gps = convertPointsToWGS84(currentTargets);
+    var lines = gps.map(function(p){ return p.id+", "+p.lon.toFixed(8)+", "+p.lat.toFixed(8)+", 0.00, -26.5"; });
+    saveFile(lines.join("\n"), fileName("prog2","pts"));
+  }
+  function exportWGS842(){
+    if(!currentTargets.length){ alert("لا يوجد نقاط"); return; }
+    var gps = convertPointsToWGS84(currentTargets);
+    var lines = gps.map(function(p){ return p.id+", "+p.lon.toFixed(8)+", "+p.lat.toFixed(8)+", 0.00, -26.5"; });
+    saveFile(lines.join("\n"), fileName("prog2","global.pts"));
+  }
+
+  // ربط الأحداث
+  function bindEvents(){
+    getEl("btnNewSession2").addEventListener("click", newSession2);
+    getEl("btnSaveSession2").addEventListener("click", saveSession2);
+    getEl("btnDeleteSession2").addEventListener("click", deleteSession2);
+    getEl("sessionsDropdown2").addEventListener("change", function(){
+      if(this.value!==""){ loadSession2(parseInt(this.value,10)); }
+    });
+
+    getEl("btnSaveStand2").addEventListener("click", saveStand2);
+    getEl("btnSaveZero2").addEventListener("click", saveZero2);
+    getEl("btnUpdate21").addEventListener("click", updateResults2);
+    getEl("btnUpdate22").addEventListener("click", updateResults2);
+
+    getEl("btnAddTarget2").addEventListener("click", addTargetProg2);
+    getEl("btnClearTarget2").addEventListener("click", clearTargetInputs2);
+
+    getEl("standname2").addEventListener("change", function(){ applyPointData2("standname2"); });
+    getEl("zeroname2").addEventListener("change", function(){ applyPointData2("zeroname2"); });
+
+    getEl("btnExportCSV2").addEventListener("click", exportCSV2);
+    getEl("btnExportPTS2").addEventListener("click", exportPTS2);
+    getEl("btnExportWGS842").addEventListener("click", exportWGS842);
+  }
+
+  // بدء التشغيل
+  document.addEventListener("DOMContentLoaded", function(){
+    loadSessions();
+    refreshSessionsDropdown2();
+    loadPointsSuggestions();
+    bindEvents();
+    renderTable();
+  });
+})();
+</script>
+</body>
+</html>
+`

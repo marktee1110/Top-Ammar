@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>🗂️ إدارة الجلسات - المهندس عمار يوسف</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root{--main:#0ea5e9;--danger:#ef4444}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;background:#f8fafc;color:#0f172a;margin:0}
+    header{background:var(--main);color:#fff;padding:16px;text-align:center;font-size:20px;font-weight:700}
+    nav{
+      display:flex;
+      justify-content:center;
+      gap:12px;
+      padding:10px;
+      background:#fff;
+      border-bottom:1px solid #e6e6e6;
+    }
+    nav button{
+      background:#fff;
+      border:1px solid transparent;
+      padding:8px 12px;
+      border-radius:6px;
+      cursor:pointer;
+      font-size:14px;
+      color:#64748b;
+    }
+    nav button.active{
+      color:var(--main);
+      font-weight:700;
+      background:rgba(14,165,233,0.06);
+      border-color:rgba(14,165,233,0.12);
+    }
+    .card{background:#fff;padding:16px;margin:20px;border-radius:10px;box-shadow:0 2px 6px rgba(2,6,23,0.06)}
+    input,select,textarea,button{font-size:15px}
+    input,select,textarea{padding:10px;margin:6px 4px;border:1px solid #cbd5e1;border-radius:8px}
+    textarea{width:100%;min-height:80px;resize:vertical}
+    button{padding:10px 14px;margin:6px 4px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
+    .btn-main{background:#0ea5e9;color:#fff}
+    .btn-danger{background:#ef4444;color:#fff}
+    .btn-edit{background:#f59e0b;color:#fff}
+    .btn-ghost{background:transparent;border:1px solid #cbd5e1;color:#0b122a}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border:1px solid #e2e8f0;padding:12px;text-align:center;font-size:16px;font-weight:700;color:#0b122a}
+    th{background:#e2e8f0}
+    tbody tr:nth-child(even){background:#f1f5f9}
+    #sessionDetails{display:none;margin-top:20px}
+    pre{white-space:pre-wrap;font-weight:600}
+    .controls-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .small{font-size:13px;color:#334155}
+    .separator-row{background:#334155;color:#fff;font-weight:800}
+    @media (max-width:700px){
+      th,td{font-size:14px;padding:8px}
+      input,textarea,button{font-size:14px}
+    }
+  </style>
+</head>
+<body>
+<header>🗂️ إدارة الجلسات - المهندس عمار يوسف</header>
+
+<nav>
+  <button onclick="location.href='index.html'" class="active">🏠 الرئيسية</button>
+</nav>
+
+  <!-- مكتبة Excel (SheetJS) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+
+<div class="card">
+  <h2>بحث وفلترة</h2>
+  <div class="controls-row">
+    <input id="searchInput" placeholder="🔍 بحث بالاسم أو البرنامج" style="flex:2" oninput="applyFilters()">
+    <select id="programFilter" onchange="applyFilters()" style="flex:1">
+      <option value="">-- كل البرامج --</option>
+    </select>
+    <select id="dateFilter" onchange="applyFilters()" style="flex:1">
+      <option value="">-- كل التواريخ --</option>
+      <option value="today">اليوم</option>
+      <option value="week">هذا الأسبوع</option>
+    </select>
+    <button class="btn-main" onclick="toggleSortOrder()">📅 ترتيب حسب التاريخ</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="controls-row" style="justify-content:space-between;align-items:center">
+    <div style="flex:1">
+      <h2>قائمة الجلسات</h2>
+      <select id="sessionSelect" onchange="selectSession()" style="width:100%;padding:10px;border-radius:8px">
+        <option value="">-- اختر جلسة --</option>
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-left:12px">
+      <button class="btn-edit" onclick="toggleControls()">✏️ تعديل الجلسات</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-main" onclick="exportAllSessions()">📊 تصدير كل الجلسات</button>
+        <button class="btn-main" onclick="confirmImport()">📥 استيراد Excel</button>
+        <input type="file" id="importExcel" accept=".xlsx" style="display:none" onchange="importExcel()" />
+      </div>
+    </div>
+  </div>
+
+  <table id="table_sessions">
+    <thead>
+      <tr id="theadRow"><th>#</th><th>الاسم</th><th>البرنامج</th><th>التاريخ</th><th>عدد النقاط</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div id="sessionDetails" class="card">
+  <h2>تفاصيل الجلسة</h2>
+  <div class="controls-row" style="justify-content:space-between;align-items:flex-start">
+    <pre id="sessionInfo" style="flex:1"></pre>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn-main" onclick="exportCurrentSession()">⬇️ تصدير هذه الجلسة</button>
+      <button class="btn-edit" onclick="openEditDetails()">✏️ تعديل الجلسة</button>
+      <button class="btn-danger" onclick="confirmDeleteCurrent()">🗑 حذف الجلسة</button>
+    </div>
+  </div>
+  <div id="sessionPoints" style="margin-top:12px"></div>
+</div>
+
+<script>
+/ قاعدة الجلسات مشتركة عبر localStorage /
+let sessionsDB = JSON.parse(localStorage.getItem("sessionsDB") || "[]");
+let currentSessionId = null;
+let showControls = false;
+let sortAsc = true;
+
+/ حفظ القاعدة /
+function saveDB(){ localStorage.setItem("sessionsDB", JSON.stringify(sessionsDB)); }
+
+/ إعادة بناء القائمة المنسدلة والفلتر /
+function renderSessionDropdown(list = sessionsDB){
+  const select = document.getElementById("sessionSelect");
+  select.innerHTML = "<option value=''>-- اختر جلسة --</option>";
+  list.forEach(s=>{
+    const opt = document.createElement("option");
+    opt.value = s.id;
+    opt.textContent = ${s.name} (${s.date});
+    select.appendChild(opt);
+  });
+  renderProgramFilter();
+  renderTable(list);
+}
+
+/ بناء فلتر البرامج /
+function renderProgramFilter(){
+  const programs = [...new Set(sessionsDB.map(s=>s.program).filter(Boolean))];
+  const filter = document.getElementById("programFilter");
+  filter.innerHTML = "<option value=''>-- كل البرامج --</option>";
+  programs.forEach(p=>{
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = p;
+    filter.appendChild(opt);
+  });
+}
+
+/ عند اختيار جلسة من القائمة /
+function selectSession(){
+  const id = document.getElementById("sessionSelect").value;
+  if(!id){ document.getElementById("sessionDetails").style.display="none"; currentSessionId = null; return; }
+  showSessionDetails(Number(id));
+}
+
+/ عرض تفاصيل الجلسة (اسم، تاريخ، وصف، نقطة الوقوف، نقطة الزيرو) /
+function showSessionDetails(id){
+  const s = sessionsDB.find(x=>x.id===id);
+  if(!s) return;
+  currentSessionId = id;
+  document.getElementById("sessionDetails").style.display = "block";
+  const standPoint = (s.points || []).find(p=>p.type==="stand");
+  const zeroPoint = (s.points || []).find(p=>p.type==="zero");
+
+  document.getElementById("sessionInfo").innerText =
+    `اسم الجلسة: ${s.name}
+البرنامج: ${s.program}
+التاريخ: ${s.date}
+الوصف: ${s.notes || "-"}`;
+
+  // بناء جدول النتائج: الوقوف أولاً، الزيرو ثانياً، فاصل غامق، ثم باقي النقاط
+  let html = "<table style='width:100%'><tr><th>النقطة</th><th>X</th><th>Y</th><th>زاوية</th><th>مسافة</th></tr>";
+
+  if(standPoint){
+    html += `<tr>
+      <td>نقطة الوقوف (${escapeHtml(standPoint.name)})</td>
+      <td>${formatVal(standPoint.x)}</td>
+      <td>${formatVal(standPoint.y)}</td>
+      <td>${formatAngleOrPlaceholder(standPoint.angle)}</td>
+      <td>${formatDistOrPlaceholder(standPoint.dist)}</td>
+    </tr>`;
+  }
+
+  if(zeroPoint){
+    html += `<tr>
+      <td>نقطة الزيرو (${escapeHtml(zeroPoint.name)})</td>
+      <td>${formatVal(zeroPoint.x)}</td>
+      <td>${formatVal(zeroPoint.y)}</td>
+      <td>${formatAngleOrPlaceholder(zeroPoint.angle)}</td>
+      <td>${formatDistOrPlaceholder(zeroPoint.dist)}</td>
+    </tr>`;
+  }
+
+  const otherPoints = (s.points || []).filter(p=>p.type!=="stand" && p.type!=="zero");
+  if(otherPoints.length){
+    html += <tr class="separator-row"><td colspan="5">نقاط أخرى</td></tr>;
+    otherPoints.forEach(p=>{
+      html += `<tr>
+        <td>${escapeHtml(p.name || "-")}</td>
+        <td>${formatVal(p.x)}</td>
+        <td>${formatVal(p.y)}</td>
+        <td>${p.angle !== undefined ? p.angle : "-"}</td>
+        <td>${p.dist !== undefined ? p.dist : "-"}</td>
+      </tr>`;
+    });
+  }
+
+  html += "</table>";
+  document.getElementById("sessionPoints").innerHTML = html;
+}
+
+/ مساعدة: تنسيق القيم /
+function formatVal(v){ return (v === undefined || v === null || v === "") ? "-" : v; }
+function formatAngleOrPlaceholder(a){ return (a === undefined || a === null || a === "") ? "-- عند الزاوية" : a; }
+function formatDistOrPlaceholder(d){ return (d === undefined || d === null || d === "") ? "-- عند المسافة" : d; }
+/ مساعدة: منع حقن HTML بسيط /
+function escapeHtml(str){
+  if(!str && str !== 0) return "-";
+  return String(str).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]); });
+}
+
+/ فلترة البحث والتحديث /
+function applyFilters(){
+  const search = document.getElementById("searchInput").value.trim().toLowerCase();
+  const program = document.getElementById("programFilter").value;
+  const dateFilter = document.getElementById("dateFilter").value;
+
+  let filtered = sessionsDB.filter(s=>{
+    const matchesSearch = !search || (s.name && s.name.toLowerCase().includes(search)) || ((s.program||"").toLowerCase().includes(search));
+    return matchesSearch;
+  });
+
+  if(program) filtered = filtered.filter(s => s.program === program);
+
+  if(dateFilter === "today"){
+    const today = new Date().toLocaleDateString();
+    filtered = filtered.filter(s => String(s.date).includes(today));
+  } else if(dateFilter === "week"){
+    const now = new Date();
+    const weekAgo = new Date(); weekAgo.setDate(now.getDate()-7);
+    filtered = filtered.filter(s => {
+      const d = new Date(s.date);
+      return !isNaN(d) ? d >= weekAgo && d <= now : String(s.date).includes(weekAgo.toLocaleDateString());
+    });
+  }
+
+  filtered.sort((a,b)=>{
+    const da = new Date(a.date), db = new Date(b.date);
+    if(isNaN(da) || isNaN(db)) return 0;
+    return sortAsc ? da - db : db - da;
+  });
+
+  renderSessionDropdown(filtered);
+}
+
+/ تبديل ظهور عمود التحكم وإعادة رسم الجدول /
+function toggleControls(){
+  showControls = !showControls;
+  renderTable();
+}
+
+/ رسم جدول الجلسات (يستخدم showControls) /
+function renderTable(list = sessionsDB){
+  const tbody = document.querySelector("#table_sessions tbody");
+  const theadRow = document.getElementById("theadRow");
+  tbody.innerHTML = "";
+
+  theadRow.innerHTML = showControls
+    ? "<th>#</th><th>الاسم</th><th>البرنامج</th><th>التاريخ</th><th>عدد النقاط</th><th>تحكم</th>"
+    : "<th>#</th><th>الاسم</th><th>البرنامج</th><th>التاريخ</th><th>عدد النقاط</th>";
+
+  list.forEach((s,i)=>{
+    const tr = document.createElement("tr");
+    if(showControls){
+      tr.innerHTML = `<td>${i+1}</td>
+        <td>${escapeHtml(s.name)}</td>
+        <td>${escapeHtml(s.program)}</td>
+        <td>${escapeHtml(s.date)}</td>
+        <td>${(s.points||[]).length}</td>
+        <td>
+          <button class="btn-ghost" onclick="showSessionDetails(${s.id})">👁 عرض</button>
+          <button class="btn-edit" onclick="editSession(${s.id})">✏️ تعديل</button>
+          <button class="btn-danger" onclick="deleteSession(${s.id})">🗑 حذف</button>
+        </td>`;
+    } else {
+      tr.innerHTML = `<td>${i+1}</td>
+        <td>${escapeHtml(s.name)}</td>
+        <td>${escapeHtml(s.program)}</td>
+        <td>${escapeHtml(s.date)}</td>
+        <td>${(s.points||[]).length}</td>`;
+    }
+    tbody.appendChild(tr);
+  });
+}
+
+/ تعديل جلسة من الجدول (حوار بسيط مع تأكيد) /
+function editSession(id){
+  const s = sessionsDB.find(x=>x.id===id);
+  if(!s) return;
+  const newName = prompt("اسم جديد للجلسة:", s.name);
+  if(newName === null) return;
+  const newProgram = prompt("اسم البرنامج:", s.program);
+  const newDate = prompt("التاريخ (YYYY-MM-DD أو أي نص):", s.date);
+  const newNotes = prompt("ملاحظات:", s.notes);
+  if(confirm("هل تريد حفظ التعديلات؟")){
+    s.name = newName.trim() || s.name;
+    s.program = newProgram !== null ? (newProgram.trim() || s.program) : s.program;
+    s.date = newDate !== null ? (newDate.trim() || s.date) : s.date;
+    s.notes = newNotes !== null ? newNotes.trim() : s.notes;
+    saveDB();
+    applyFilters();
+    showSessionDetails(s.id);
+  }
+}
+
+/ حذف جلسة من الجدول /
+function deleteSession(id){
+  if(!confirm("هل أنت متأكد من حذف هذه الجلسة؟")) return;
+  sessionsDB = sessionsDB.filter(s=>s.id!==id);
+  saveDB();
+  applyFilters();
+  if(currentSessionId === id){
+    document.getElementById("sessionDetails").style.display = "none";
+    currentSessionId = null;
+  }
+}
+
+/ تأكيد حذف من تفاصيل /
+function confirmDeleteCurrent(){
+  if(currentSessionId === null) return;
+  if(confirm("هل أنت متأكد من حذف هذه الجلسة؟")) deleteSession(currentSessionId);
+}
+
+/ فتح نافذة تعديل من تفاصيل /
+function openEditDetails(){
+  if(currentSessionId === null) return;
+  editSession(currentSessionId);
+}
+
+/ تصدير كل الجلسات إلى Excel /
+function exportAllSessions(){
+  if(!sessionsDB.length){ alert("لا توجد جلسات للتصدير"); return; }
+  const data = sessionsDB.map(s => ({
+    "الاسم": s.name,
+    "البرنامج": s.program,
+    "التاريخ": s.date,
+    "عدد النقاط": (s.points||[]).length,
+    "ملاحظات": s.notes || ""
+  }));
+  const ws = XLSX.utils.jsontosheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.bookappendsheet(wb, ws, "الجلسات");
+  XLSX.writeFile(wb, "الجلسات.xlsx");
+}
+
+/ تصدير الجلسة الحالية إلى Excel (تفصيلي) /
+function exportCurrentSession(){
+  if(currentSessionId === null){ alert("اختر جلسة أولاً"); return; }
+  const s = sessionsDB.find(x=>x.id===currentSessionId);
+  if(!s){ alert("الجلسة غير موجودة"); return; }
+
+  const pointsData = (s.points && s.points.length) ? s.points.map(p=>({
+    "اسم الهدف": p.name || "",
+    "X": p.x !== undefined ? p.x : "",
+    "Y": p.y !== undefined ? p.y : "",
+    "زاوية": p.angle !== undefined ? p.angle : "",
+    "مسافة": p.dist !== undefined ? p.dist : ""
+  })) : [];
+
+  const headerRow = [{
+    "اسم الهدف": "اسم الجلسة: " + s.name,
+    "X": "البرنامج: " + s.program,
+    "Y": "التاريخ: " + s.date,
+    "زاوية": "ملاحظات: " + (s.notes || ""),
+    "مسافة": "نقطة الوقوف: " + ((s.points||[]).find(p=>p.type==="stand")?.name || "-") +
+              " | نقطة الزيرو: " + ((s.points||[]).find(p=>p.type==="zero")?.name || "-")
+  }];
+
+  const worksheetData = headerRow.concat(pointsData);
+  const ws = XLSX.utils.jsontosheet(worksheetData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.bookappendsheet(wb, ws, s.name || "جلسة");
+  const safeName = (s.name || "session").replace(/[\\\/:*?"<>|]/g, "_");
+  XLSX.writeFile(wb, safeName + ".xlsx");
+}
+
+/ تأكيد قبل الاستيراد /
+function confirmImport(){
+  const msg = "⚠️ يجب أن يكون ملف Excel بنفس صيغة الجدول:\n\n" +
+              "الأعمدة: الاسم | البرنامج | التاريخ | عدد النقاط | ملاحظات\n\n" +
+              "هل توافق على الالتزام بهذه الصيغة قبل الاستيراد؟";
+  if(confirm(msg)) document.getElementById("importExcel").click();
+}
+
+/ استيراد من Excel /
+function importExcel(){
+  const file = document.getElementById("importExcel").files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:"array"});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const imported = XLSX.utils.sheettojson(ws, {defval:""});
+
+      let added = 0;
+      imported.forEach(row=>{
+        const name = row["الاسم"] || row["Name"] || row["اسم"];
+        const program = row["البرنامج"] || row["Program"] || "عام";
+        const date = row["التاريخ"] || row["Date"] || new Date().toLocaleDateString();
+        const notes = row["ملاحظات"] || row["Notes"] || "";
+
+        if(name){
+          sessionsDB.push({
+            id: Date.now() + Math.floor(Math.random()*1000),
+            name: String(name),
+            program: String(program),
+            date: String(date),
+            points: [],
+            notes: String(notes)
+          });
+          added++;
+        }
+      });
+
+      if(added){
+        saveDB();
+        applyFilters();
+        alert("✅ تم استيراد " + added + " جلسة بنجاح");
+      } else {
+        alert("⚠️ لم يتم العثور على صفوف صالحة للاستيراد. تأكد من صيغة الملف.");
+      }
+    } catch(err){
+      console.error(err);
+      alert("❌ حدث خطأ أثناء قراءة الملف. تأكد أنه ملف Excel صالح.");
+    } finally {
+      document.getElementById("importExcel").value = "";
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/ ترتيب عكسي/تصاعدي حسب التاريخ /
+function toggleSortOrder(){
+  sortAsc = !sortAsc;
+  sessionsDB.sort((a,b)=>{
+    const da = new Date(a.date), db = new Date(b.date);
+    if(isNaN(da) || isNaN(db)) return 0;
+    return sortAsc ? da - db : db - da;
+  });
+  applyFilters();
+}
+
+/ تهيئة العرض عند تحميل الصفحة /
+document.addEventListener("DOMContentLoaded", function(){
+  renderSessionDropdown();
+});
+</script>
+</body>
+</html>
+`
